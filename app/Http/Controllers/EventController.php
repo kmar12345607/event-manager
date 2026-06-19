@@ -22,15 +22,15 @@ class EventController extends Controller
     {
         $request->validate([
             'name'             => 'required|string|max:255',
-            'date'             => 'required|date',
+            'event_date'       => 'required|date',
             'location'         => 'required|string|max:255',
             'description'      => 'nullable|string',
             'max_participants' => 'required|integer|min:1',
-            'status'           => 'required|in:active,cancelled,done',
+            'status'           => 'required|in:upcoming,ongoing,completed,cancelled',
         ]);
 
         Event::create($request->all());
-        return redirect()->route('events.index')->with('success', 'Événement créé avec succès !');
+        return redirect()->route('events.index')->with('success', 'Événement créé !');
     }
 
     public function show(Event $event)
@@ -48,11 +48,11 @@ class EventController extends Controller
     {
         $request->validate([
             'name'             => 'required|string|max:255',
-            'date'             => 'required|date',
+            'event_date'       => 'required|date',
             'location'         => 'required|string|max:255',
             'description'      => 'nullable|string',
             'max_participants' => 'required|integer|min:1',
-            'status'           => 'required|in:active,cancelled,done',
+            'status'           => 'required|in:upcoming,ongoing,completed,cancelled',
         ]);
 
         $event->update($request->all());

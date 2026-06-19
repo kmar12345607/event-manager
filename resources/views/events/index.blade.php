@@ -2,9 +2,11 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-calendar-event"></i> Événements</h2>
+    <h2 class="fw-bold text-primary">
+        <i class="bi bi-calendar-event me-2"></i>Événements
+    </h2>
     <a href="{{ route('events.create') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouvel événement
+        <i class="bi bi-plus-circle me-1"></i> Nouvel événement
     </a>
 </div>
 
@@ -24,13 +26,15 @@
             <tbody>
                 @forelse($events as $event)
                 <tr>
-                    <td>{{ $event->name }}</td>
-                    <td>{{ \Carbon\Carbon::parse($event->date)->format('d/m/Y') }}</td>
+                    <td class="fw-semibold">{{ $event->name }}</td>
+                    <td>{{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }}</td>
                     <td>{{ $event->location }}</td>
                     <td>{{ $event->participants->count() }} / {{ $event->max_participants }}</td>
                     <td>
-                        @if($event->status === 'active')
-                            <span class="badge bg-success">Actif</span>
+                        @if($event->status === 'upcoming')
+                            <span class="badge bg-primary">À venir</span>
+                        @elseif($event->status === 'ongoing')
+                            <span class="badge bg-success">En cours</span>
                         @elseif($event->status === 'cancelled')
                             <span class="badge bg-danger">Annulé</span>
                         @else
@@ -56,7 +60,10 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center text-muted">Aucun événement trouvé.</td>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        Aucun événement trouvé.
+                    </td>
                 </tr>
                 @endforelse
             </tbody>

@@ -16,7 +16,7 @@
                     @foreach($events as $event)
                         <option value="{{ $event->id }}"
                             {{ $participant->event_id == $event->id ? 'selected' : '' }}>
-                            {{ $event->name }} ({{ \Carbon\Carbon::parse($event->date)->format('d/m/Y') }})
+                            {{ $event->name }} ({{ \Carbon\Carbon::parse($event->event_date)->format('d/m/Y') }})
                         </option>
                     @endforeach
                 </select>

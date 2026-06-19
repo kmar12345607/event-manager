@@ -15,6 +15,7 @@ Route::get('/event/{event}', [PublicController::class, 'show'])
 
 Route::post('/event/{event}/register', [PublicController::class, 'register'])
      ->name('public.events.register');
+
 // ─── BACK-OFFICE admin (protégé) ─────────────────
 Route::middleware(['auth'])->group(function () {
 
@@ -33,8 +34,8 @@ Route::middleware(['auth'])->group(function () {
     // Événements
     Route::resource('events', EventController::class);
 
-    // Participants (imbriqués dans un événement)
-    Route::resource('events.participants', ParticipantController::class);
+    // Participants — route simple (pas imbriquée) pour garder participants.edit etc.
+    Route::resource('participants', ParticipantController::class);
 
     // Changer statut de présence
     Route::patch(

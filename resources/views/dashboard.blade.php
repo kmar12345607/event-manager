@@ -467,8 +467,8 @@
                                 @php
                                     $statusMap = [
                                         'upcoming'  => ['label' => 'À venir',  'class' => 'badge-upcoming'],
-                                        'active'    => ['label' => 'En cours', 'class' => 'badge-active'],
-                                        'past'      => ['label' => 'Terminé',  'class' => 'badge-past'],
+                                        'ongoing'   => ['label' => 'En cours', 'class' => 'badge-active'],
+                                        'completed' => ['label' => 'Terminé',  'class' => 'badge-past'],
                                         'cancelled' => ['label' => 'Annulé',   'class' => 'badge-cancelled'],
                                     ];
                                     $s = $statusMap[$event->status] ?? ['label' => $event->status, 'class' => 'badge-past'];

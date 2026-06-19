@@ -23,7 +23,8 @@ class ParticipantController extends Controller
 
     public function create(Request $request)
     {
-        $events = Event::where('status', 'active')->get();
+        // CORRIGÉ : 'active' → 'upcoming','ongoing'
+        $events = Event::whereIn('status', ['upcoming', 'ongoing'])->get();
         $selectedEvent = $request->event_id;
         return view('participants.create', compact('events', 'selectedEvent'));
     }
@@ -53,7 +54,8 @@ class ParticipantController extends Controller
 
     public function edit(Participant $participant)
     {
-        $events = Event::where('status', 'active')->get();
+        // CORRIGÉ : 'active' → 'upcoming','ongoing'
+        $events = Event::whereIn('status', ['upcoming', 'ongoing'])->get();
         return view('participants.edit', compact('participant', 'events'));
     }
 
@@ -79,5 +81,47 @@ class ParticipantController extends Controller
         $participant->delete();
         return redirect()->route('events.show', $eventId)
                          ->with('success', 'Participant supprimé !');
+    }
+
+    // AJOUTÉ : méthode manquante pour changer le statut de présence
+    public function updateAttendance(Request $request, Participant $participant)
+    {
+        $request->validate([
+            'attendance_status' => 'required|in:registered,present,absent',
+        ]);
+        $participant->update(['attendance_status' => $request->attendance_status]);
+        return back()->with('success', 'Statut de présence mis à jour !');
+    }
+
+    // AJOUTÉ : méthode manquante pour l'export CSV
+    public function export(Event $event)
+    {
+        $participants = $event->participants()->get();
+        $filename = 'participants_event_' . $event->id . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function () use ($participants) {
+            $file = fopen('php://output', 'w');
+            // BOM UTF-8 pour que Excel affiche les accents correctement
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ['Nom complet', 'Email', 'Téléphone', 'Date inscription', 'Statut présence', 'Notes'], ';');
+            foreach ($participants as $p) {
+                fputcsv($file, [
+                    $p->full_name,
+                    $p->email,
+                    $p->phone ?? '',
+                    $p->registration_date,
+                    $p->attendance_status,
+                    $p->notes ?? '',
+                ], ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

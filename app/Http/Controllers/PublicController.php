@@ -9,12 +9,17 @@ use Illuminate\Http\Request;
 class PublicController extends Controller
 {
     // Page d'accueil — liste des événements publics
-public function home()
+public function home(Request $request)
 {
-    $events = Event::whereIn('status', ['active', 'upcoming', 'ongoing'])
-                   ->withCount('participants')
-                   ->orderBy('event_date')
-                   ->paginate(6);
+    $query = Event::whereIn('status', ['upcoming', 'ongoing'])
+                  ->withCount('participants')
+                  ->orderBy('event_date');
+
+    if ($request->status) {
+        $query->where('status', $request->status);
+    }
+
+    $events = $query->paginate(6);
     return view('public.home', compact('events'));
 }
 
