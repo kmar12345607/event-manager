@@ -49,9 +49,9 @@ Hors périmètre :
 
 - Connexion à un système de paiement réel
 - Intégration à des plateformes d'événements externes
-- Envoi d'emails réels de confirmation
-- Authentification multi-rôles avancée
-- Notifications (SMS, push)
+- Notifications push ou SMS
+
+> **Note d'évolution du périmètre** : le cahier des charges initial excluait l'envoi d'emails réels et une authentification multi-rôles avancée. En cours de développement, ces deux points ont finalement été implémentés (authentification Laravel Breeze avec rôles admin/participant, vérification d'email, et envoi de vrais emails de confirmation via SMTP Gmail) afin de rendre le prototype de check-in par QR code réellement testable de bout en bout. Voir la section [Fonctionnalités avancées](#fonctionnalités-avancées-ajoutées-hors-cahier-des-charges-initial) ci-dessous.
 
 ## Fonctionnalités
 
@@ -81,6 +81,18 @@ Hors périmètre :
 - Nombre total de participants inscrits
 - Taux de présence global
 - Export de la liste des participants au format CSV (optionnel)
+
+## Fonctionnalités avancées ajoutées (hors cahier des charges initial)
+
+En plus des exigences du cahier des charges, les fonctionnalités suivantes ont été ajoutées pour renforcer le prototype :
+
+- **Authentification et rôles** : inscription/connexion (Laravel Breeze), deux rôles (`admin`, `participant`), middleware d'accès dédié au back-office
+- **Vérification d'email** : obligatoire à l'inscription (`MustVerifyEmail`)
+- **Billetterie QR code** : génération d'un `ticket_code` unique par participant, scanner de check-in (`html5-qrcode`) côté admin, horodatage `checked_in_at`
+- **Emails réels** : confirmation d'inscription et de check-in envoyés via SMTP Gmail
+- **Espace participant** : tableau de bord et profil dédiés aux participants connectés
+- **API JSON interne** : endpoints `admin/api/*` pour événements, participants et statistiques
+- **Visites guidées** : tours interactifs Intro.js sur les interfaces front-office et back-office
 
 ## Stack technique
 
@@ -143,16 +155,31 @@ projet/
 | Champ | Type | Description |
 |---|---|---|
 | id | bigint (PK) | Identifiant unique |
+| ticket_code | string (nullable, unique) | Code unique du billet QR (ajouté avec la billetterie) |
 | event_id | bigint (FK) | Référence vers l'événement (events.id) |
 | full_name | string | Nom complet du participant |
 | email | string | Adresse email |
-| phone | string | Numéro de téléphone |
+| phone | string (nullable) | Numéro de téléphone |
 | registration_date | date | Date d'inscription |
-| attendance_status | enum | inscrit / présent / absent |
+| attendance_status | enum | registered / present / absent |
+| checked_in_at | timestamp (nullable) | Horodatage du scan du billet (check-in QR) |
 | notes | text (nullable) | Notes complémentaires |
 | created_at / updated_at | timestamp | Horodatage Laravel |
 
-Relation : un événement peut avoir plusieurs participants (relation un-à-plusieurs).
+### Table users
+
+| Champ | Type | Description |
+|---|---|---|
+| id | bigint (PK) | Identifiant unique |
+| name | string | Nom de l'utilisateur |
+| email | string (unique) | Adresse email |
+| role | enum | admin / participant |
+| email_verified_at | timestamp (nullable) | Date de vérification de l'email |
+| password | string | Mot de passe haché |
+| remember_token | string (nullable) | Jeton "se souvenir de moi" |
+| created_at / updated_at | timestamp | Horodatage Laravel |
+
+Relations : un événement peut avoir plusieurs participants (un-à-plusieurs). La table `users` est indépendante de `participants` (l'inscription à un événement ne crée pas nécessairement de compte utilisateur).
 
 ```php
 // Event.php
@@ -216,6 +243,19 @@ DB_PASSWORD=
 
 Pour utiliser SQLite à la place : définir DB_CONNECTION=sqlite et créer le fichier database/database.sqlite.
 
+> Note : le seeder `EventSeeder` utilise une commande `SET FOREIGN_KEY_CHECKS` spécifique à MySQL/MariaDB. En environnement SQLite, ces lignes doivent être retirées avant de lancer `db:seed`. L'usage de MySQL/MariaDB reste recommandé (c'est l'environnement utilisé pendant tout le développement).
+
+Pour l'envoi d'emails réels (confirmation d'inscription, check-in par QR code), configurer un compte Gmail avec mot de passe d'application dans `.env` :
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=votre_adresse@gmail.com
+MAIL_PASSWORD=votre_mot_de_passe_application
+MAIL_ENCRYPTION=tls
+```
+
 Lancer les migrations pour créer les tables :
 
 ```bash
@@ -247,15 +287,39 @@ Toutes les données générées sont fictives. Aucune donnée réelle de paiemen
 5. Gérer le statut de présence depuis la liste des participants d'un événement
 6. Exporter la liste des participants au format CSV (optionnel)
 
+## Comptes de démonstration
+
+Après `php artisan db:seed`, deux comptes sont disponibles (mot de passe : `password`) :
+
+| Rôle | Email | Usage |
+|---|---|---|
+| Admin | admin@eventmanager.tn | Accès au back-office (/admin/dashboard) |
+| Participant | participant@eventmanager.tn | Accès à l'espace participant (/mon-espace) |
+
 ## Captures d'écran
 
-| Page | Aperçu |
-|---|---|
-| Tableau de bord | à ajouter |
-| Liste des événements | à ajouter |
-| Création d'un événement | à ajouter |
-| Liste des participants | à ajouter |
-| Inscription d'un participant | à ajouter |
+Les captures ci-dessous illustrent les pages principales de l'application. Pour les régénérer :
+
+1. Lancer le serveur : `php artisan serve`
+2. Se connecter avec le compte admin ci-dessus
+3. Prendre une capture (Cmd+Shift+4 sur Mac, Win+Maj+S sur Windows, ou l'extension navigateur "Full Page Screen Capture") pour chacune des pages suivantes, puis enregistrer les fichiers dans un dossier `docs/screenshots/` à la racine du projet
+
+| Page | URL | Fichier attendu |
+|---|---|---|
+| Page d'accueil publique | `/` | `docs/screenshots/accueil.png` |
+| Connexion | `/login` | `docs/screenshots/login.png` |
+| Tableau de bord admin | `/admin/dashboard` | `docs/screenshots/dashboard.png` |
+| Liste des événements | `/admin/events` | `docs/screenshots/events-index.png` |
+| Création d'un événement | `/admin/events/create` | `docs/screenshots/event-create.png` |
+| Liste des participants | `/admin/participants` | `docs/screenshots/participants-index.png` |
+| Inscription d'un participant | `/admin/participants/create` | `docs/screenshots/participant-create.png` |
+| Scanner QR code (check-in) | `/admin/scanner` | `docs/screenshots/scanner.png` |
+| Espace participant | `/mon-espace` | `docs/screenshots/participant-dashboard.png` |
+
+Une fois les fichiers ajoutés dans `docs/screenshots/`, les intégrer ici avec :
+```markdown
+![Tableau de bord](docs/screenshots/dashboard.png)
+```
 
 ## Planning du projet
 
