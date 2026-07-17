@@ -600,5 +600,138 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Bandeau d'invite au son (les navigateurs bloquent la voix automatique tant qu'on n'a pas cliqué) -->
+<div id="voice-prompt"
+    style="position:fixed; top:90px; left:50%; transform:translateX(-50%) translateY(-20px);
+           z-index:9999; background:#1a237e; color:white; padding:12px 22px;
+           border-radius:30px; box-shadow:0 8px 24px rgba(26,35,126,0.35);
+           font-size:0.9rem; font-weight:600; cursor:pointer; display:flex;
+           align-items:center; gap:10px; opacity:0; transition:all 0.4s ease;">
+    <i class="bi bi-volume-up-fill"></i>
+    <span>Activer le message de bienvenue</span>
+</div>
+
+<!-- Bandeau de diagnostic (à retirer une fois que ça marche) -->
+<div id="voice-debug"
+    style="position:fixed; top:150px; left:50%; transform:translateX(-50%);
+           z-index:9999; background:#111827; color:#a7f3d0; padding:10px 18px;
+           border-radius:10px; font-size:0.78rem; font-family:monospace;
+           max-width:90%; text-align:center; display:none;">
+</div>
+
+<!-- Bouton flottant pour rejouer le message vocal -->
+<button id="voice-replay-btn" title="Rejouer le message vocal"
+    style="position:fixed; bottom:24px; right:24px; z-index:9999; width:52px; height:52px;
+           border-radius:50%; border:none; background:linear-gradient(135deg,#1a237e,#1565c0);
+           color:white; font-size:1.3rem; box-shadow:0 6px 20px rgba(26,35,126,0.4);
+           display:flex; align-items:center; justify-content:center; cursor:pointer;
+           transition:transform 0.2s;">
+    <i class="bi bi-volume-up-fill"></i>
+</button>
+
+<script>
+(function () {
+    const WELCOME_TEXT = "Bienvenue sur Event Manager, la plateforme de gestion de vos événements.";
+    const replayBtn = document.getElementById('voice-replay-btn');
+    const prompt = document.getElementById('voice-prompt');
+    const debugBox = document.getElementById('voice-debug');
+    let played = false;
+
+    function debug(msg) {
+        console.log('[voice]', msg);
+        debugBox.style.display = 'block';
+        debugBox.textContent = msg;
+    }
+
+    if (!('speechSynthesis' in window)) {
+        debug('❌ Ce navigateur ne supporte pas speechSynthesis.');
+        prompt.style.display = 'none';
+        return;
+    }
+
+    function pickFrenchVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        return voices.find(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
+    }
+
+    function speakWelcome(source) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(WELCOME_TEXT);
+        utterance.lang = 'fr-FR';
+        utterance.volume = 1;
+
+        const voices = window.speechSynthesis.getVoices();
+        const frVoice = pickFrenchVoice();
+        if (frVoice) utterance.voice = frVoice;
+
+        debug(`(${source}) ${voices.length} voix trouvée(s)` + (frVoice ? `, voix FR: ${frVoice.name}` : ', AUCUNE voix FR — voix par défaut utilisée'));
+
+        utterance.onstart = () => debug(`▶️ Lecture démarrée (${source})`);
+        utterance.onend   = () => debug(`✅ Lecture terminée (${source})`);
+        utterance.onerror = (e) => debug(`❌ Erreur : ${e.error} (${source})`);
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function hidePrompt() {
+        prompt.style.opacity = '0';
+        prompt.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => prompt.style.display = 'none', 400);
+    }
+
+    function tryAutoplay() {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            debug('⚠️ Aucune voix chargée pour le moment (normal au tout premier chargement).');
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(WELCOME_TEXT);
+        utterance.lang = 'fr-FR';
+        const frVoice = pickFrenchVoice();
+        if (frVoice) utterance.voice = frVoice;
+
+        utterance.onstart = function () {
+            played = true;
+            debug(`▶️ Lecture auto démarrée, voix: ${frVoice ? frVoice.name : 'par défaut'}`);
+            hidePrompt();
+        };
+        utterance.onerror = function (e) {
+            debug(`⚠️ Autoplay bloqué (${e.error}) — clique sur le bandeau bleu.`);
+        };
+        window.speechSynthesis.speak(utterance);
+
+        setTimeout(function () {
+            if (!played) {
+                prompt.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    prompt.style.opacity = '1';
+                    prompt.style.transform = 'translateX(-50%) translateY(0)';
+                });
+            }
+        }, 500);
+    }
+
+    window.addEventListener('load', function () {
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.addEventListener('voiceschanged', tryAutoplay, { once: true });
+            setTimeout(tryAutoplay, 300);
+        } else {
+            tryAutoplay();
+        }
+    });
+
+    prompt.addEventListener('click', function () {
+        played = true;
+        speakWelcome('clic bandeau');
+        hidePrompt();
+    });
+
+    replayBtn.addEventListener('click', function () {
+        speakWelcome('clic bouton rejouer');
+    });
+})();
+</script>
 </body>
 </html>

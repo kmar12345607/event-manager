@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Participant;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ParticipantAccountController extends Controller
 {
@@ -12,7 +12,7 @@ class ParticipantAccountController extends Controller
     {
         // Récupère les inscriptions liées à l'email du compte connecté
         $inscriptions = Participant::with('event')
-            ->where('email', auth()->user()->email)
+            ->where('email', Auth::user()->email)
             ->latest()
             ->get();
 
@@ -21,7 +21,17 @@ class ParticipantAccountController extends Controller
 
     public function profile()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         return view('participant.profile', compact('user'));
+    }
+
+    // Affiche le billet d'une inscription (uniquement si elle appartient au compte connecté)
+    public function ticket(Participant $participant)
+    {
+        abort_unless($participant->email === Auth::user()->email, 403);
+
+        $participant->load('event');
+
+        return view('participant.ticket', compact('participant'));
     }
 }

@@ -15,7 +15,7 @@ class CheckinController extends Controller
         return view('admin.scanner');
     }
 
-    // Vérifie un code de billet (appelé en AJAX par le scanner ou la saisie manuelle)
+    // Vérifie un code de billet
     public function verify(Request $request)
     {
         $request->validate([
@@ -34,7 +34,9 @@ class CheckinController extends Controller
             ], 404);
         }
 
-        if (! $participant->event) {
+        $event = $participant->event;
+
+        if (! $event) {
             return response()->json([
                 'status'  => 'invalid',
                 'message' => 'Billet invalide — l\'événement associé n\'existe plus.',
@@ -47,7 +49,7 @@ class CheckinController extends Controller
                 'message' => 'Ce billet a déjà été utilisé à ' . $participant->checked_in_at->format('H:i') . '.',
                 'participant' => [
                     'name'  => $participant->full_name,
-                    'event' => $participant->event->name,
+                    'event' => $event->name,
                     'time'  => $participant->checked_in_at->format('H:i'),
                 ],
             ], 409);
@@ -60,9 +62,11 @@ class CheckinController extends Controller
             ], 403);
         }
 
+        $checkedInAt = now();
+
         $participant->update([
             'attendance_status' => 'present',
-            'checked_in_at'     => now(),
+            'checked_in_at'     => $checkedInAt,
         ]);
 
         // Email de confirmation au participant
@@ -78,8 +82,8 @@ class CheckinController extends Controller
             'message' => 'Entrée validée !',
             'participant' => [
                 'name'  => $participant->full_name,
-                'event' => $participant->event->name,
-                'time'  => $participant->checked_in_at->format('H:i'),
+                'event' => $event->name,
+                'time'  => $checkedInAt->format('H:i'),
             ],
         ]);
     }

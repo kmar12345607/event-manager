@@ -216,12 +216,11 @@
                     </div>
                 @else
                     <div class="evt-card p-4 evt-form">
+                        @guest
                         <div class="evt-form-title"
                              data-intro="C'est ici que tu t'inscris ! Il te faut juste un compte, puis un formulaire en 3 petites étapes."
                              data-step="3"
                              data-title="S'inscrire">S'inscrire à cet événement</div>
-
-                        @guest
                         <p class="evt-form-sub">Un compte est nécessaire pour s'inscrire.</p>
 
                         <!-- Mur de connexion : compte obligatoire -->
@@ -249,22 +248,36 @@
                             </div>
                         </div>
                         @else
-                        <p class="evt-form-sub">Suivez les 3 étapes pour réserver votre place.</p>
-
                         @unless(auth()->user()->hasVerifiedEmail())
-                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" style="font-size:.85rem;">
-                            <i class="bi bi-envelope-exclamation fs-5"></i>
-                            <div>
-                                Ton compte n'est pas encore vérifié. Vérifie ta boîte mail
-                                (et les spams) avant de confirmer ton inscription, sinon elle
-                                ne sera pas enregistrée.
-                                <form action="{{ route('verification.send') }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-link p-0" style="font-size:.85rem;">Renvoyer l'email</button>
-                                </form>
+                        <!-- Compte connecté mais NON vérifié : page de vérification uniquement -->
+                        <div class="evt-form-title">Vérifiez votre compte</div>
+                        <p class="evt-form-sub">Une dernière étape avant de réserver votre place.</p>
+
+                        <div class="text-center py-4">
+                            <div class="evt-full-icon" style="background:#fff7ed;color:#f59e0b;">
+                                <i class="bi bi-envelope-exclamation"></i>
                             </div>
+                            <h6 class="fw-bold mb-2" style="color:#0d1b4b;">Vérifiez votre adresse email</h6>
+                            <p class="text-muted mb-4" style="font-size:.88rem;">
+                                Nous avons envoyé un lien de confirmation à
+                                <strong>{{ auth()->user()->email }}</strong>.
+                                Vérifiez votre boîte mail (et vos spams) puis cliquez sur
+                                le lien pour activer votre compte et pouvoir vous inscrire.
+                            </p>
+                            <form action="{{ route('verification.send') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn-evt-submit d-inline-block" style="width:auto;padding:12px 30px;">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Renvoyer l'email de vérification
+                                </button>
+                            </form>
                         </div>
-                        @endunless
+                        @else
+                        <!-- Compte connecté ET vérifié : formulaire d'inscription complet -->
+                        <div class="evt-form-title"
+                             data-intro="C'est ici que tu t'inscris ! Il te faut juste un compte, puis un formulaire en 3 petites étapes."
+                             data-step="3"
+                             data-title="S'inscrire">S'inscrire à cet événement</div>
+                        <p class="evt-form-sub">Suivez les 3 étapes pour réserver votre place.</p>
 
                         <!-- Indicateur d'étapes -->
                         <div class="step-indicator" id="stepIndicator">
@@ -380,6 +393,7 @@
                                 Vos données sont utilisées uniquement pour la gestion de cet événement.
                             </p>
                         </form>
+                        @endunless
                         @endguest
                     </div>
                 @endif

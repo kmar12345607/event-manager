@@ -8,6 +8,7 @@
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <style>
 
@@ -362,6 +363,23 @@ Mot de passe oublié ?
 
 </div>
 
+<div class="mb-4 d-flex justify-content-center"
+     data-intro="Coche simplement la case pour prouver que tu n'es pas un robot."
+     data-step="3"
+     data-title="Vérification">
+
+@if(config('services.recaptcha.site_key'))
+<div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
+@endif
+
+@error('g-recaptcha-response')
+<div class="text-danger small mt-1 text-center">
+{{ $message }}
+</div>
+@enderror
+
+</div>
+
 <button
 type="submit"
 class="btn btn-primary btn-login w-100">
@@ -372,7 +390,7 @@ Se connecter
 
 </button>
 
-<div class="login-link" data-intro="Pas encore de compte ? Clique ici pour en créer un gratuitement en moins d'une minute." data-step="3" data-title="Créer un compte">
+<div class="login-link" data-intro="Pas encore de compte ? Clique ici pour en créer un gratuitement en moins d'une minute." data-step="4" data-title="Créer un compte">
 
 Pas encore de compte ?
 

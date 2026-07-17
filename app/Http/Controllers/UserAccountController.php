@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -78,7 +79,7 @@ class UserAccountController extends Controller
         ]);
 
         // Un admin ne peut pas se retirer lui-même ses droits (évite de se bloquer)
-        if ($user->id === auth()->id() && $validated['role'] !== 'admin') {
+        if ($user->id === Auth::id() && $validated['role'] !== 'admin') {
             return back()->withErrors(['role' => 'Vous ne pouvez pas retirer vos propres droits administrateur.']);
         }
 
@@ -93,7 +94,7 @@ class UserAccountController extends Controller
      */
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::id()) {
             return back()->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
         }
 

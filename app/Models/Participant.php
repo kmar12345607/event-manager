@@ -29,7 +29,7 @@ class Participant extends Model
 
     protected static function booted(): void
     {
-        // Génère un code billet unique à la création (ex: WKS7-4F9K2P)
+        // Génère un code billet unique à la création 
         static::creating(function (Participant $participant) {
             if (empty($participant->ticket_code)) {
                 $participant->ticket_code = static::generateTicketCode();
